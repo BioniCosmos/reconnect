@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Reconnect</title>
+  </head>
+  <body>
+    <p>Current IP: {{ ip }}</p>
+    <button>Reconnect</button>
+    <script type="module">
+      import ky from 'https://esm.sh/ky'
+
+      const button = document.querySelector('button')
+      button.addEventListener('click', async (event) => {
+        const id = await ky('/api/reconnect').text()
+        button.textContent = 'Working…'
+        button.disabled = true
+        setTimeout(async () => {
+          const message = await ky(`/api/echo/${id}`).text()
+          alert(message)
+          location.reload()
+        }, 15000)
+      })
+    </script>
+  </body>
+</html>

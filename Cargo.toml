@@ -1,0 +1,15 @@
+[package]
+name = "reconnect"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+reqwest = { version = "0.12", default-features = false, features = [
+    "json",
+    "blocking",
+] }
+rocket = "0.5"
+rocket_dyn_templates = { version = "0.2", features = ["minijinja"] }
+serde = "1"
+serde_json = "1"
+uuid = { version = "1", features = ["v4"] }
