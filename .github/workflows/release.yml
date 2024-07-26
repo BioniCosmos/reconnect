@@ -36,7 +36,7 @@ jobs:
           target: ${{ matrix.target.name }}
           args: "--locked --release"
           strip: true
-      - run: mv target/${{ matrix.target.name }}/release reconnect-${{ matrix.target.name }}
+      - run: mv target/${{ matrix.target.name }}/release/reconnect reconnect-${{ matrix.target.name }}
       - name: Publish to releases
         uses: softprops/action-gh-release@v2
         with:
