@@ -12,7 +12,7 @@ Reconnect is a web application that allows users to reconnect their network by i
 1. Deploy the binary:
 
    ```shellsession
-   $ sudo curl -Lo reconnect --output-dir /usr/local/bin https://github.com/BioniCosmos/reconnect/releases/download/v0.1.3/reconnect-<target>
+   $ sudo curl -Lo reconnect --output-dir /usr/local/bin https://github.com/BioniCosmos/reconnect/releases/download/v0.2.0/reconnect-<target>
    $ sudo chmod +x /usr/local/bin/reconnect
    ```
 
