@@ -1,9 +1,10 @@
+use minijinja::{context, Environment, Value};
+use minijinja_embed::load_templates;
 use reqwest::{
     blocking::{Client, Response},
     Url,
 };
-use rocket::{fairing::AdHoc, get, launch, routes, tokio::task, State};
-use rocket_dyn_templates::{context, Template};
+use rocket::{fairing::AdHoc, get, launch, response::content::RawHtml, routes, tokio::task, State};
 use serde::Deserialize;
 use serde_json::json;
 use std::{
@@ -49,15 +50,20 @@ const BASE_URL: &str = "http://192.168.0.1/";
 
 #[launch]
 fn rocket() -> _ {
+    let mut env = Environment::new();
+    load_templates!(&mut env);
     rocket::build()
         .mount("/", routes![index, reconnect, echo])
-        .attach(Template::fairing())
         .attach(AdHoc::config::<Config>())
         .manage(Receivers::new(Mutex::new(HashMap::new())))
+        .manage(env)
 }
 
 #[get("/")]
-async fn index(config: &State<Config>) -> Result<Template, String> {
+async fn index(
+    config: &State<Config>,
+    env: &State<Environment<'_>>,
+) -> Result<RawHtml<String>, String> {
     let password = config.password.clone();
     let ip = task::spawn_blocking(move || {
         let client = Client::new();
@@ -65,7 +71,7 @@ async fn index(config: &State<Config>) -> Result<Template, String> {
     })
     .await
     .map_err_to_string()??;
-    Ok(Template::render("index", context! { ip }))
+    render(env, "index.html.j2", context! { ip })
 }
 
 #[get("/api/reconnect")]
@@ -156,4 +162,11 @@ impl<T, E: Error> MapErrorToString<T> for Result<T, E> {
     fn map_err_to_string(self) -> Result<T, String> {
         self.map_err(|e| e.to_string())
     }
+}
+
+fn render(env: &Environment, name: &str, ctx: Value) -> Result<RawHtml<String>, String> {
+    env.get_template(name)
+        .and_then(|tmpl| tmpl.render(ctx))
+        .map(RawHtml)
+        .map_err_to_string()
 }
