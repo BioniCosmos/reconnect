@@ -12,7 +12,7 @@ use std::{
     error::Error,
     sync::{
         mpsc::{self, Receiver},
-        Arc, Mutex,
+        Mutex, RwLock,
     },
     thread,
     time::Duration,
@@ -44,7 +44,7 @@ struct WanStatus {
     ipaddr: String,
 }
 
-type Receivers = Arc<Mutex<HashMap<String, Receiver<String>>>>;
+type Receivers = RwLock<HashMap<String, Mutex<Receiver<String>>>>;
 
 const BASE_URL: &str = "http://192.168.0.1/";
 
@@ -55,7 +55,7 @@ fn rocket() -> _ {
     rocket::build()
         .mount("/", routes![index, reconnect, echo])
         .attach(AdHoc::config::<Config>())
-        .manage(Receivers::new(Mutex::new(HashMap::new())))
+        .manage(Receivers::new(HashMap::new()))
         .manage(env)
 }
 
@@ -79,7 +79,10 @@ fn reconnect(config: &State<Config>, receivers: &State<Receivers>) -> String {
     let password = config.password.clone();
     let (tx, rx) = mpsc::channel();
     let id = Uuid::new_v4().to_string();
-    receivers.lock().unwrap().insert(id.clone(), rx);
+    receivers
+        .write()
+        .unwrap()
+        .insert(id.clone(), Mutex::new(rx));
     task::spawn_blocking(move || {
         thread::sleep(Duration::from_secs(1));
         let client = Client::new();
@@ -95,8 +98,10 @@ fn reconnect(config: &State<Config>, receivers: &State<Receivers>) -> String {
 
 #[get("/api/echo/<id>")]
 fn echo(id: &str, receivers: &State<Receivers>) -> Option<String> {
-    let receivers = receivers.lock().unwrap();
-    receivers.get(id).map(|rx| rx.recv().unwrap())
+    let receivers = receivers.read().unwrap();
+    receivers
+        .get(id)
+        .map(|rx| rx.lock().unwrap().recv().unwrap())
 }
 
 fn login(client: &Client, password: &str) -> Result<String, String> {
